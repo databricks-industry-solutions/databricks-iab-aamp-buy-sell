@@ -39,7 +39,20 @@ python -m seed reset               # DROP the aamp + kv_* schemas (keep instance
 
 ## Customer self-deploy
 
-**Option A — one command, config-driven (`provision_lakebase: true`):**
+**One command — full stack (recommended):**
+```bash
+databricks auth login --host https://YOUR-workspace.cloud.databricks.com --profile YOUR-profile
+make all PREFIX=aamp PROFILE=YOUR-profile
+```
+One `make all` does everything: bootstraps the venv, builds the three frontends, vendors the
+IAB taxonomy TSVs (auto-downloaded from the public SDK repo), deploys the DAB (3 Lakebase
+instances + 4 apps + seed job), tunes endpoints to 0.5–1 CU, registers each app's service
+principal as a Postgres role, grants buyer→registry/seller app access, seeds both layers,
+starts the apps, registers the sellers into the registry, and wires the buyer to the live
+registry URL. Prereqs: `python3`, `node`/`npm`, and an authenticated Databricks CLI profile.
+The granular paths below cover data-layer-only deploys.
+
+**Option A — data layer only, config-driven (`provision_lakebase: true`):**
 ```bash
 pip install -r requirements.txt
 databricks auth login --host https://YOUR-workspace.cloud.databricks.com
@@ -88,8 +101,9 @@ Built on **IAB Tech Lab**'s [`seller-agent` SDK](https://github.com/IABTechLab/s
 The seller apps implement AAMP (Agentic Advertising Management Protocols) sell-side flows on
 top of it: OpenDirect 2.1, AdCOM, and the IAB Audience 1.1 / Content 3.1 taxonomies.
 
-The IAB taxonomy TSVs themselves are **not redistributed** in this repo — vendor them locally
-from your own clone of the SDK (`make taxonomies SDK_DIR=path/to/seller-agent`).
+The IAB taxonomy TSVs themselves are **not redistributed** in this repo — the build downloads
+them from the public SDK repo on first use (any `make render`/`deploy`/`all`, or `make
+taxonomies`); set `SDK_DIR=path/to/seller-agent` to vendor from a local clone instead.
 
 Frontends are Vite + React; Python services are FastAPI + FastMCP + CrewAI. All third-party
 packages are used under their own licenses (Apache-2.0 / MIT / BSD) as declared in
