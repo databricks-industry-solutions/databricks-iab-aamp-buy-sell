@@ -5,35 +5,47 @@ PY := .venv/bin/python
 
 .PHONY: install preview validate up seed kv reset down frontend render deploy endpoints grant-apps grant-app-access run-apps register-sellers wire-buyer seed-job all taxonomies clean
 
-taxonomies:             ## vendor IAB TSVs from a local SDK clone (SDK_DIR=path/to/seller-agent)
-	@test -n "$(SDK_DIR)" || (echo "set SDK_DIR=path/to/seller-agent (a clone of the IAB SDK)"; exit 1)
-	cp "$(SDK_DIR)/data/taxonomies/audience-1.1/Audience Taxonomy 1.1.tsv" resources/taxonomies/
-	cp "$(SDK_DIR)/data/taxonomies/content-3.1/Content Taxonomy 3.1.tsv"  resources/taxonomies/
-	@echo "✓ vendored IAB taxonomies → resources/taxonomies/ (buyer TaxonomyLookupTool + seed validator use these)"
+TAXO_DIR := resources/taxonomies
+SDK_RAW  := https://raw.githubusercontent.com/IABTechLab/seller-agent/main/data/taxonomies
+taxonomies: $(TAXO_DIR)/.vendored ## vendor IAB TSVs (from SDK_DIR=path/to/seller-agent, else downloaded from the public SDK repo)
 
-install:                ## create venv + install deps
+$(TAXO_DIR)/.vendored:
+	@if [ -n "$(SDK_DIR)" ]; then \
+	  cp "$(SDK_DIR)/data/taxonomies/audience-1.1/Audience Taxonomy 1.1.tsv" $(TAXO_DIR)/ && \
+	  cp "$(SDK_DIR)/data/taxonomies/content-3.1/Content Taxonomy 3.1.tsv"  $(TAXO_DIR)/; \
+	else \
+	  curl -fsSL -o "$(TAXO_DIR)/Audience Taxonomy 1.1.tsv" "$(SDK_RAW)/audience-1.1/Audience%20Taxonomy%201.1.tsv" && \
+	  curl -fsSL -o "$(TAXO_DIR)/Content Taxonomy 3.1.tsv"  "$(SDK_RAW)/content-3.1/Content%20Taxonomy%203.1.tsv"; \
+	fi
+	@touch $@
+	@echo "✓ vendored IAB taxonomies → $(TAXO_DIR)/ (buyer TaxonomyLookupTool + seed validator use these)"
+
+$(PY): requirements.txt ## auto-create venv + install deps (re-runs when requirements.txt changes)
 	python3 -m venv .venv && $(PY) -m pip install -q --upgrade pip && $(PY) -m pip install -q -r requirements.txt
+	@touch $(PY)
+
+install: $(PY)          ## create venv + install deps
 	@echo "✓ installed. Next: cp config.example.yaml config.yaml, then 'make preview' or 'make up'."
 
-validate:               ## generate + validate (single-channel sellers, no cross-seller, 3-way trust)
+validate: $(PY)         ## generate + validate (single-channel sellers, no cross-seller, 3-way trust)
 	$(PY) -m seed validate
 
-preview:                ## generate + validate → inspection + SDK CSVs in out/ (no workspace, no DB)
+preview: $(PY)          ## generate + validate → inspection + SDK CSVs in out/ (no workspace, no DB)
 	$(PY) -m seed preview
 
-up:                     ## provision Lakebase (from config) + seed (relational + kv_store)
+up: $(PY)               ## provision Lakebase (from config) + seed (relational + kv_store)
 	$(PY) -m seed up
 
-seed:                   ## (re)seed both sellers: relational tables + kv_store + SDK CSVs
+seed: $(PY)             ## (re)seed both sellers: relational tables + kv_store + SDK CSVs
 	$(PY) -m seed seed
 
-kv:                     ## (re)materialize the SDK kv_store only (relational already loaded)
+kv: $(PY)               ## (re)materialize the SDK kv_store only (relational already loaded)
 	$(PY) -m seed kv
 
-reset:                  ## drop the aamp + kv_* schemas in all 3 DBs (keep instances)
+reset: $(PY)            ## drop the aamp + kv_* schemas in all 3 DBs (keep instances)
 	$(PY) -m seed reset
 
-down:                   ## DELETE the 3 Lakebase instances (stops billing)
+down: $(PY)             ## DELETE the 3 Lakebase instances (stops billing)
 	$(PY) -m seed down --yes
 
 PREFIX ?= aamp
@@ -47,7 +59,7 @@ frontend:               ## build the seller cockpit + registry console + buyer c
 	@cd buyer/frontend && [ -d node_modules ] || NODE_OPTIONS= npm ci --no-audit --no-fund
 	cd buyer/frontend && NODE_OPTIONS= npm run build
 
-render: frontend        ## build UI, then generate build/ app dirs (sellers + registry + buyer; unique source path each)
+render: $(PY) frontend $(TAXO_DIR)/.vendored ## build UI + vendor taxonomies, then generate build/ app dirs (sellers + registry + buyer)
 	$(PY) seller/render_apps.py $(PREFIX)
 	$(PY) registry/render_apps.py $(PREFIX)
 	$(PY) buyer/render_apps.py $(PREFIX) $(PROFILE)
@@ -73,12 +85,12 @@ endpoints:              ## tune each project's auto-created primary endpoint to 
 	@echo "  (scale-to-zero is on by default — endpoints suspend when idle; idle timeout is the"
 	@echo "   project default, fixed at create time and not updatable post-create.)"
 
-grant-apps:             ## register each app's service principal as a Postgres role (run after deploy)
+grant-apps: $(PY)       ## register each app's service principal as a Postgres role (run after deploy)
 	$(PY) seller/grant_apps.py $(PREFIX) $(PROFILE)
 	$(PY) registry/grant_apps.py $(PREFIX) $(PROFILE)
 	$(PY) buyer/grant_apps.py $(PREFIX) $(PROFILE)
 
-grant-app-access:       ## grant the buyer app's SP CAN_USE on the registry + seller apps (app-to-app MCP through the proxy)
+grant-app-access: $(PY) ## grant the buyer app's SP CAN_USE on the registry + seller apps (app-to-app MCP through the proxy)
 	$(PY) grant_app_access.py $(PREFIX) $(PROFILE)
 
 run-apps:               ## deploy app code + start each app (like `bundle run` for a job)
@@ -87,10 +99,10 @@ run-apps:               ## deploy app code + start each app (like `bundle run` f
 	databricks bundle run registry_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
 	databricks bundle run buyer_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
 
-register-sellers:       ## register the live seller apps into the registry (dynamic; needs apps running + seeded)
+register-sellers: $(PY) ## register the live seller apps into the registry (dynamic; needs apps running + seeded)
 	$(PY) registry/register_sellers.py $(PREFIX) $(PROFILE)
 
-wire-buyer:             ## bake the deployed registry URL into the buyer + redeploy it (registry must already exist)
+wire-buyer: $(PY)       ## bake the deployed registry URL into the buyer + redeploy it (registry must already exist)
 	$(PY) buyer/render_apps.py $(PREFIX) $(PROFILE)
 	databricks bundle deploy $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
 	databricks bundle run buyer_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"

@@ -9,6 +9,7 @@ config.yaml
 provision.log
 *.log
 resources/taxonomies/*.tsv
+resources/taxonomies/.vendored
 build/
 dist/
 node_modules/
