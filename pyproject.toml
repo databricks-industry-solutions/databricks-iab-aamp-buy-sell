@@ -1,0 +1,22 @@
+[project]
+name = "seed"
+version = "0.1.0"
+description = "IAB AAMP demo data layer — CTV + Linear sellers; relational tables + SDK kv_store"
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+db = ["psycopg[binary]>=3.1", "databricks-sdk>=0.30"]
+
+[project.scripts]
+seed = "seed.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["seed"]
+
+[tool.setuptools.package-data]
+seed = ["sellers/*.yaml", "buyers.yaml"]

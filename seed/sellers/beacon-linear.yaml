@@ -1,0 +1,44 @@
+# Beacon Broadcast — a single-channel Linear TV seller.
+seller:
+  id: seller-beacon
+  name: "Beacon Broadcast"
+  domain: beaconbroadcast.example
+  channel: LINEAR_TV     # buyer-side ChannelType
+  media_type: linear_tv  # registry capability token + inventory_type
+  device_types: [3]      # AdCOM: 3=TV
+
+audiences:
+  - {id: aud-news-current,      iab: "522",  name: "News & Current Events", size: 6100000,  keywords: ["news", "current events", "news junkies"]}    # Interest|News and Politics
+  - {id: aud-auto-intenders,    iab: "244",  name: "Auto Intenders",       size: 9400000,  keywords: ["auto intenders", "auto", "car shoppers"]}    # Interest|Automotive|Auto Buying and Selling
+  - {id: aud-inmarket-suv,      iab: "810",  name: "In-Market: SUV",       size: 3100000,  keywords: ["in-market suv", "suv"]}                       # Purchase Intent|Auto Ownership|SUV
+  - {id: aud-active-investors,  iab: "538",  name: "Active Investors",     size: 6700000,  keywords: ["active investors", "investors", "investing"]} # Interest|Personal Finance|Personal Investing
+  - {id: aud-cc-shoppers,       iab: "1388", name: "Credit-Card Shoppers", size: 8900000,  keywords: ["credit-card shoppers", "credit card", "cards"]} # Purchase Intent|Finance|Credit Cards
+  - {id: aud-business-travelers,iab: "1656", name: "Business Travelers",   size: 3300000,  keywords: ["business travelers", "business travel", "corporate"]} # Purchase Intent|Travel|Business Travel
+  - {id: aud-luxury-cars,       iab: "825",  name: "Luxury Car Shoppers",  size: 4200000,  keywords: ["luxury shoppers", "luxury", "luxury cars"]}   # Purchase Intent|Auto Ownership|Luxury Cars
+  - {id: aud-home-buyers,       iab: "591",  name: "Home Buyers",          size: 5200000,  keywords: ["home buyers", "real estate", "buying a home"]} # Interest|Real Estate|Real Estate Buying and Selling
+  - {id: aud-first-homeowners,  iab: "142",  name: "First-Time Homeowners", size: 3800000, keywords: ["first-time homeowners", "new homeowners", "homeowner"]} # Demographic|Household Data|First Time Homeowner
+
+# Inventory (single channel = linear_tv).
+inventory:
+  - {id: inv-lin-news,    name: "Linear News :30 (Primetime)",  content: ["52"],         floor_cpm: 30.0, ad_formats: [video]}  # Business and Finance (no standalone News tier in Content 3.1)
+  - {id: inv-lin-finance, name: "Linear Finance :30 (Daytime)", content: ["391", "396"], floor_cpm: 22.0, ad_formats: [video]}  # Personal Finance / Financial Planning
+  - {id: inv-lin-auto,    name: "Linear Auto :30 (Primetime)",  content: ["1", "30"],    floor_cpm: 26.0, ad_formats: [video]}  # Automotive / Auto Buying and Selling
+  - {id: inv-lin-realestate, name: "Linear Real Estate :30 (Daytime)", content: ["441", "407"], floor_cpm: 20.0, ad_formats: [video]}  # Real Estate / Home Financing
+
+products:
+  - {id: prod-lin-news,    name: "Linear News",    inventory: [inv-lin-news],    audiences: [aud-news-current, aud-business-travelers], base_cpm: 34.0}
+  - {id: prod-lin-finance, name: "Linear Finance", inventory: [inv-lin-finance], audiences: [aud-active-investors, aud-cc-shoppers], base_cpm: 30.0}
+  - {id: prod-lin-auto,    name: "Linear Auto",    inventory: [inv-lin-auto],    audiences: [aud-auto-intenders, aud-inmarket-suv, aud-luxury-cars], base_cpm: 32.0}
+  - {id: prod-lin-realestate, name: "Linear Real Estate", inventory: [inv-lin-realestate], audiences: [aud-home-buyers, aud-first-homeowners], base_cpm: 28.0}
+
+packages:
+  - {id: pkg-lin-primetime, name: "Beacon Primetime",     products: [prod-lin-news, prod-lin-auto],    base_price: 33.0, featured: true}
+  - {id: pkg-lin-money,     name: "Beacon Money",  products: [prod-lin-finance, prod-lin-realestate], base_price: 30.0}  # finance + real estate; news is Primetime-only now
+
+rate_card:
+  - {tier: agency,     discount: 0.10}
+  - {tier: advertiser, base_cpm_override: 27.0, floor: 18.0, ceiling: 40.0}
+
+registry:
+  trust_level: APPROVED
+  decoy: {id: seller-rival-linear, name: "Rival Broadcasting", domain: rivalbroadcast.example, trust_level: BLOCKED}

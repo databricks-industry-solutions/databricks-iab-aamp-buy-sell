@@ -1,1 +1,5 @@
-# Check here to get the latest version of the databricks-cli: https://github.com/databricks/cli
+pyyaml>=6.0
+# Postgres/Lakebase load (optional — generation + validation work without it):
+psycopg[binary]>=3.1
+# Lakebase credential minting from a Databricks profile (optional):
+databricks-sdk>=0.30

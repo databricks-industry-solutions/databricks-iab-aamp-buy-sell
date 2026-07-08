@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "buyer_agent"
+version = "0.1.0"
+description = "Agentic AAMP buyer (L1/L2/L3 CrewAI crew) on Databricks"
+requires-python = ">=3.11"
+# Runtime deps are listed in requirements.txt.
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["buyer_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: hits live Lakebase / a live seller app (needs Databricks creds); deselect with -m 'not integration'",
+]

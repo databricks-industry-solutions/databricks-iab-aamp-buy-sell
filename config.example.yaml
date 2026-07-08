@@ -1,0 +1,14 @@
+# Copy to config.yaml and edit for YOUR workspace. Used by the DAB + seed job.
+
+workspace_profile: DEFAULT          # your `databricks auth` profile / host
+instance_prefix: aamp               # → <prefix>-buyer / <prefix>-seller / <prefix>-registry (avoid collisions)
+
+provision_lakebase: true            # false = bring-your-own existing instances (set the DSNs below)
+
+# Sellers (CTV + Linear) are defined in seed/sellers/*.yaml; buyer + briefs in seed/buyers.yaml.
+# Bring-your-own DSNs (only used when provision_lakebase: false, or for local runs).
+# Local runs read these from env: AAMP_SELLER_DSN / AAMP_BUYER_DSN / AAMP_REGISTRY_DSN
+dsn:
+  seller: ""
+  buyer: ""
+  registry: ""

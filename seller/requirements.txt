@@ -1,0 +1,26 @@
+# seller/ — deterministic AAMP seller MCP server (runtime deps)
+#
+# The seller REUSES the IAB seller-agent SDK's models + engines (MediaKitService,
+# PricingRulesEngine) VERBATIM, but runs NO agents — so it does NOT need the SDK's
+# heavy `crewai` stack. We install the SDK with `--no-deps` and pin these slim deps.
+#
+# Dev / CI install (crewai-free):
+#   pip install -r requirements.txt
+#   pip install --no-deps "ad_seller_system @ git+https://github.com/IABTechLab/seller-agent.git@0b463ba"
+#
+# (The pinned SDK commit is 0b463ba. See seller/README.md for the deploy story.)
+
+# --- SDK transitive bits the deterministic subset needs (models + engines + storage.base) ---
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+aiosqlite>=0.20.0          # storage/__init__ eagerly imports the (unused) sqlite backend
+
+# --- our server + data access ---
+mcp>=1.0.0                 # FastMCP (same framework the SDK's own MCP server uses)
+fastapi>=0.115.0
+uvicorn>=0.30.0
+httpx>=0.27.0
+psycopg[binary,pool]>=3.1  # relational reads (aamp.pricing_rules) + a reused connection pool
+asyncpg>=0.29.0            # the SDK PostgresBackend (LakebaseKVStore) connects via asyncpg
+databricks-sdk>=0.119.0    # mint Lakebase creds at runtime; >=0.119 for the Autoscaling w.postgres API
+python-dotenv>=1.0.0

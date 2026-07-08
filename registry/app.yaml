@@ -1,0 +1,13 @@
+# Reference/local app config for the registry. The DAB deploys the rendered
+# build/registry/app.yaml (from registry/render_apps.py, which sets the target
+# instance from the prefix). The app's service principal is granted the Lakebase
+# project via `make grant-apps`; it mints its own OAuth credential at runtime.
+
+command: ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+env:
+  - name: AAMP_REGISTRY_INSTANCE
+    value: aamp-registry
+  - name: AAMP_REGISTRY_DATABASE
+    value: agent_registry
+  # AAMP_DATABRICKS_PROFILE is unset in-app: the SDK uses the app's SP credentials.

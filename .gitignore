@@ -1,27 +1,17 @@
-# Databricks Asset Bundle files
-.databricks/
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-dist/
-build/
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
-# Environment files
+*.pyc
+out/
 .env
-.env.local 
+*.egg-info/
+.venv/
+.databricks/
+config.yaml
+provision.log
+*.log
+resources/taxonomies/*.tsv
+build/
+dist/
+node_modules/
+*.tsbuildinfo
+
+.DS_Store

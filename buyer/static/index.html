@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AAMP Buyer Agent — Demo</title>
+<style>
+  :root {
+    --bg: #0b0f1a; --panel: #131a2b; --panel-2: #1a2237; --line: #243049;
+    --ink: #e8edf7; --muted: #93a0bd; --muted-2: #6b7896;
+    --accent: #6ea8fe; --accent-2: #8b5cf6;
+    --l1: #8b5cf6; --l2: #6ea8fe; --l3: #2dd4bf;
+    --good: #34d399; --good-bg: #0f2e25; --warn: #fbbf24; --warn-bg: #2e2710;
+    --bad: #f87171; --bad-bg: #2e1414; --chip: #20294060;
+    --radius: 14px; --shadow: 0 10px 30px #0006;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 80% -10%, #16203a 0, transparent 60%), var(--bg);
+    color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  }
+  a { color: var(--accent); }
+  header {
+    display: flex; align-items: center; gap: 16px; padding: 16px 26px;
+    border-bottom: 1px solid var(--line); background: #0d1322cc; backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .2px; font-weight: 650; }
+  header .sub { color: var(--muted); font-size: 12.5px; }
+  .badge {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--panel-2); font-size: 13px; color: var(--muted);
+  }
+  .badge b { color: var(--ink); text-transform: capitalize; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px; }
+  .grid { display: grid; grid-template-columns: 360px 1fr; gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .card .hd { padding: 14px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 13.5px;
+    display: flex; align-items: center; gap: 9px; color: var(--ink); }
+  .card .hd .n { width: 20px; height: 20px; border-radius: 6px; background: var(--panel-2);
+    display: grid; place-items: center; font-size: 11px; color: var(--muted); border: 1px solid var(--line); }
+  .card .bd { padding: 14px 16px; }
+
+  /* brief picker */
+  .briefs { display: flex; flex-direction: column; gap: 10px; }
+  .brief {
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; cursor: pointer;
+    background: var(--panel-2); transition: border-color .15s, transform .05s;
+  }
+  .brief:hover { border-color: #34507e; }
+  .brief.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .brief .t { font-weight: 600; font-size: 14px; }
+  .brief .m { color: var(--muted); font-size: 12px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 6px 12px; }
+  .brief .id { color: var(--muted-2); font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+
+  .prof { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .prof span { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  .prof select {
+    flex: 1; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--ink); font-size: 13.5px; text-transform: capitalize;
+    cursor: pointer;
+  }
+  button.run {
+    width: 100%; margin-top: 12px; padding: 12px; border: 0; border-radius: 11px; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #08101f; font-weight: 700;
+    font-size: 14.5px; letter-spacing: .2px;
+  }
+  button.run:disabled { filter: grayscale(.6) brightness(.7); cursor: not-allowed; }
+
+  /* stage rail */
+  .rail { display: flex; gap: 8px; padding: 0 0 16px; flex-wrap: wrap; }
+  .stage {
+    display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted-2); font-size: 12.5px;
+  }
+  .stage .s { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--muted-2); display: grid; place-items: center; }
+  .stage.active { color: var(--ink); border-color: var(--accent); }
+  .stage.active .s { border-color: var(--accent); }
+  .stage.done { color: var(--good); border-color: #1c4a3a; }
+  .stage.done .s { border-color: var(--good); background: var(--good); }
+
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; background: var(--chip);
+    border: 1px solid var(--line); font-size: 11.5px; color: var(--muted); margin: 2px 4px 2px 0; }
+  .pill b { color: var(--ink); }
+  .code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+
+  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .kv:last-child { border-bottom: 0; }
+  .kv .k { color: var(--muted); } .kv .v { color: var(--ink); font-weight: 600; }
+
+  .bar { height: 7px; border-radius: 6px; background: var(--panel-2); overflow: hidden; margin-top: 6px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+
+  /* channel cards */
+  .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .channels { grid-template-columns: 1fr; } }
+  .ch { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+  .ch .ch-hd { padding: 12px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); }
+  .ch .ch-hd .nm { font-weight: 650; }
+  .ch .ch-hd .st { margin-left: auto; font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .ch .ch-bd { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* level badges (agent hierarchy) */
+  .lvlbadge { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 5px;
+    border-radius: 5px; font-size: 10.5px; font-weight: 800; letter-spacing: .3px; color: #08101f; }
+  .lvlbadge.l1 { background: var(--l1); } .lvlbadge.l2 { background: var(--l2); } .lvlbadge.l3 { background: var(--l3); }
+  .legend { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+    font-size: 11.5px; color: var(--muted); }
+  .legend .lvlbadge { margin-left: 6px; }
+
+  /* per-channel crew hierarchy strip: L2 lead over its L3 workers */
+  .crew { border: 1px solid var(--line); border-radius: 10px; background: #10182a; padding: 9px 10px; }
+  .agent { display: flex; align-items: center; gap: 7px; padding: 5px 7px; border-radius: 8px;
+    border: 1px solid transparent; transition: background .15s, border-color .15s; }
+  .agent .an { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .agent .role { color: var(--muted-2); font-size: 11px; margin-left: auto; }
+  .agent.active { background: #16233c; border-color: #33507d; }
+  .agent.active .an { color: var(--ink); }
+  .agent.active .pulse { display: inline-block; }
+  .agent .pulse { display: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 8px var(--accent); animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .crew-workers { margin-top: 4px; padding-left: 16px; border-left: 2px dashed var(--line); margin-left: 10px; }
+
+  /* per-channel phase track */
+  .phases { display: flex; align-items: center; gap: 0; }
+  .ph { flex: 1; text-align: center; font-size: 10.5px; color: var(--muted-2); padding: 5px 2px;
+    border-bottom: 2px solid var(--line); position: relative; transition: color .2s, border-color .2s; }
+  .ph.active { color: var(--ink); border-color: var(--accent); font-weight: 700; }
+  .ph.done { color: var(--good); border-color: var(--good); }
+  .ph.done::after { content: "✓"; margin-left: 3px; }
+
+  .feed { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow: auto; padding-right: 4px; }
+  .step { font-size: 12px; color: var(--muted); display: flex; gap: 7px; align-items: flex-start;
+    padding: 6px 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; }
+  .step .who { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; }
+  .step .who .rn { font-size: 10.5px; color: var(--muted); }
+  .step .ic { flex: 0 0 auto; }
+  .step .tx b { color: var(--ink); } .step .tx .d { color: var(--muted-2); }
+  .step .tx { flex: 1; min-width: 0; }
+  .step .callline { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .step .toolchip { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--l3);
+    background: #0e2a2a; border: 1px solid #1c4a4a; border-radius: 5px; padding: 1px 6px; }
+  .step .call { font-size: 10px; color: var(--muted-2); text-transform: uppercase; letter-spacing: .5px; }
+  .step .rn { color: var(--muted-2); font-size: 10.5px; margin-top: 2px; }
+  /* the seller's return payload — the ← side of the trace */
+  .step .retline { margin-top: 4px; display: flex; gap: 6px; align-items: flex-start;
+    font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; color: var(--good);
+    background: #0d2220; border: 1px solid #143a30; border-radius: 6px; padding: 3px 7px;
+    white-space: pre-wrap; word-break: break-word; }
+  .step .retline .arrow { color: var(--muted-2); flex: 0 0 auto; }
+  .step .retline.pending { color: var(--muted-2); background: transparent; border-color: transparent; padding: 2px 0; }
+  .step .retline.pending .arrow { animation: blink 1s ease-in-out infinite; }
+  .empty { color: var(--muted-2); font-size: 12.5px; font-style: italic; }
+
+  .decision { padding: 11px 13px; border-radius: 11px; border: 1px solid var(--line); }
+  .decision.BOOKED { background: var(--good-bg); border-color: #1c4a3a; }
+  .decision.PASSED { background: var(--warn-bg); border-color: #463814; }
+  .decision.NO_SELLER, .decision.NO_PRODUCT { background: var(--bad-bg); border-color: #4a1e1e; }
+  .decision .tag { font-weight: 750; letter-spacing: .4px; font-size: 12.5px; }
+  .decision.BOOKED .tag { color: var(--good); } .decision.PASSED .tag { color: var(--warn); }
+  .decision.NO_SELLER .tag, .decision.NO_PRODUCT .tag { color: var(--bad); }
+  .decision .rs { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .spinner { width: 13px; height: 13px; border: 2px solid var(--muted-2); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .summary { margin-bottom: 18px; padding: 16px 18px; border-radius: var(--radius); border: 1px solid var(--line);
+    background: linear-gradient(135deg, #122033, #16213a); display: none; }
+  .summary.show { display: block; }
+  .summary h2 { margin: 0 0 8px; font-size: 16px; }
+  .summary .stats { display: flex; gap: 22px; flex-wrap: wrap; }
+  .summary .stat .n { font-size: 24px; font-weight: 750; }
+  .summary .stat .l { color: var(--muted); font-size: 12px; }
+  .summary.err { background: var(--bad-bg); border-color: #4a1e1e; }
+
+  .hint { color: var(--muted-2); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>AAMP Buyer Agent</h1>
+    <div class="sub">Hierarchical media-buying crew · live demo</div>
+  </div>
+  <div class="badge"><span class="dot"></span> Buyer&nbsp;<b id="buyerId">…</b> · tier&nbsp;<b id="tier">…</b></div>
+</header>
+
+<div class="wrap">
+  <div id="summary" class="summary"></div>
+
+  <div class="grid">
+    <!-- left: brief picker -->
+    <div class="card">
+      <div class="hd"><span class="n">1</span> Choose a campaign brief</div>
+      <div class="bd">
+        <div id="briefs" class="briefs"><div class="empty">Loading briefs…</div></div>
+        <label class="prof">
+          <span>Present as</span>
+          <select id="profile" title="Identity profile the buyer presents to sellers"></select>
+        </label>
+        <button id="runBtn" class="run" disabled>Run campaign</button>
+        <div class="hint" style="margin-top:10px">
+          The crew will plan audiences, allocate budget, then book or pass each channel
+          against live seller prices — at the identity tier you present. Higher tiers
+          reveal more (seat → agency → advertiser) and unlock better pricing.
+        </div>
+      </div>
+    </div>
+
+    <!-- right: live run -->
+    <div>
+      <div id="rail" class="rail"></div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="hd"><span class="n">2</span> Setup</div>
+        <div class="bd" id="setup"><div class="empty">Pick a brief and press “Run campaign”.</div></div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><span class="n">3</span> Channels — per-channel crews book or pass
+          <span class="legend">
+            <span class="lvlbadge l1">L1</span> Portfolio
+            <span class="lvlbadge l2">L2</span> Specialist
+            <span class="lvlbadge l3">L3</span> Research · Execution
+          </span>
+        </div>
+        <div class="bd"><div id="channels" class="channels"><div class="empty">Channels appear once a run starts.</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const money = n => n == null ? "—" : "$" + Number(n).toLocaleString(undefined, {maximumFractionDigits:0});
+const cpm = n => n == null ? "—" : "$" + Number(n).toFixed(2);
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+let briefs = [], selected = null, es = null;
+
+const STAGES = [
+  ["identity", "Identity"], ["audience", "Audience"], ["budget", "Budget"],
+  ["channels", "Channels"], ["done", "Done"],
+];
+function renderRail(state) {
+  const rail = $("#rail"); rail.innerHTML = "";
+  STAGES.forEach(([key, label]) => {
+    const st = state[key] || "";
+    const d = el("div", "stage " + st);
+    d.appendChild(el("span", "s", st === "done" ? "✓" : ""));
+    d.appendChild(el("span", null, label));
+    rail.appendChild(d);
+  });
+}
+let railState = {};
+const setStage = (k, v) => { railState[k] = v; renderRail(railState); };
+
+// ---- brief picker ----
+const DEFAULT_TIER = "advertiser";
+async function loadBriefs() {
+  try {
+    const [b, s] = await Promise.all([fetch("/briefs").then(r=>r.json()), fetch("/status").then(r=>r.json())]);
+    briefs = b || [];
+    $("#buyerId").textContent = s.buyer_id || "buyer";
+    initProfile(s.tiers || ["public","seat","agency","advertiser"]);
+    renderBriefs();
+  } catch (e) { $("#briefs").innerHTML = `<div class="empty">Failed to load briefs: ${esc(e)}</div>`; }
+}
+
+// ---- identity profile selector ----
+function initProfile(tiers) {
+  const sel = $("#profile"); sel.innerHTML = "";
+  tiers.forEach(t => { const o = el("option"); o.value = t; o.textContent = t; sel.appendChild(o); });
+  sel.value = tiers.includes(DEFAULT_TIER) ? DEFAULT_TIER : tiers[tiers.length-1];
+  const sync = () => { $("#tier").textContent = sel.value; };
+  sel.onchange = sync; sync();
+}
+function renderBriefs() {
+  const box = $("#briefs"); box.innerHTML = "";
+  if (!briefs.length) { box.innerHTML = `<div class="empty">No briefs found. Seed the buyer database first.</div>`; return; }
+  briefs.forEach(b => {
+    const chs = (b.channels||[]).map(c => `${c.channel} ${c.budget_pct}%`).join(" · ");
+    const ints = ((b.target_audience||{}).interests||[]).join(", ");
+    const maxc = (b.deal_preferences||{}).max_cpm;
+    const card = el("div", "brief");
+    card.innerHTML = `
+      <div class="t">${esc(b.name || b.brief_id)}</div>
+      <div class="m">
+        <span>${money(b.total_budget)} ${esc(b.currency||"USD")}</span>
+        ${chs?`<span>${esc(chs)}</span>`:""}
+        ${maxc!=null?`<span>max CPM ${cpm(maxc)}</span>`:""}
+      </div>
+      ${ints?`<div class="m"><span>🎯 ${esc(ints)}</span></div>`:""}
+      <div class="m"><span class="id">${esc(b.brief_id)}</span></div>`;
+    card.onclick = () => { selected = b.brief_id;
+      document.querySelectorAll(".brief").forEach(x=>x.classList.remove("sel"));
+      card.classList.add("sel"); $("#runBtn").disabled = false; };
+    box.appendChild(card);
+  });
+}
+
+// ---- run ----
+$("#runBtn").onclick = async () => {
+  if (!selected) return;
+  if (es) { es.close(); es = null; }
+  $("#runBtn").disabled = true; $("#runBtn").textContent = "Running…";
+  $("#summary").className = "summary"; $("#summary").innerHTML = "";
+  $("#setup").innerHTML = `<div class="empty">Starting…</div>`;
+  $("#channels").innerHTML = "";
+  railState = {}; renderRail(railState);
+  try {
+    const tier = $("#profile").value;
+    const { run_id } = await fetch(`/runs/${encodeURIComponent(selected)}?tier=${encodeURIComponent(tier)}`, {method:"POST"}).then(r=>r.json());
+    subscribe(run_id);
+  } catch (e) {
+    $("#setup").innerHTML = `<div class="empty">Failed to start run: ${esc(e)}</div>`;
+    resetRunBtn();
+  }
+};
+function resetRunBtn() { $("#runBtn").disabled = !selected; $("#runBtn").textContent = "Run campaign"; }
+
+function subscribe(runId) {
+  es = new EventSource(`/runs/${runId}/events`);
+  es.onmessage = ev => { try { handle(JSON.parse(ev.data)); } catch(_){} };
+  es.addEventListener("done", () => { es.close(); es = null; resetRunBtn(); });
+  es.addEventListener("error", () => {});
+}
+
+// ---- setup panel ----
+function setupRow(k, v) { return `<div class="kv"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`; }
+let setupEls = {};
+function initSetup(d) {
+  const s = $("#setup"); s.innerHTML = "";
+  s.appendChild(el("div", null,
+    setupRow("Campaign", esc(d.brief_name||d.brief_id)) +
+    setupRow("Budget", `${money(d.total_budget)} ${esc(d.currency||"USD")}`) +
+    setupRow("Max CPM", d.max_cpm!=null?cpm(d.max_cpm):"—")
+  ));
+  const tier = el("div", null, `<div style="margin:10px 0 4px;color:var(--muted);font-size:12px">Presenting identity tier</div><div id="tierLine"><span class="spinner"></span></div>`);
+  s.appendChild(tier);
+  const aud = el("div"); aud.id = "audBlock";
+  aud.innerHTML = `<div style="margin:12px 0 4px;color:var(--muted);font-size:12px">Audience plan</div><div id="audBody" class="hint">resolving IAB codes…</div>`;
+  s.appendChild(aud);
+  const bud = el("div"); bud.id = "budBlock";
+  bud.innerHTML = `<div style="margin:12px 0 4px;color:var(--muted);font-size:12px">Budget allocation</div><div id="budBody" class="hint">allocating…</div>`;
+  s.appendChild(bud);
+  setupEls = {};
+}
+
+// ---- channel cards ----
+// Per-channel L2 lead persona (matches the seller-side ChannelSpec.role).
+const LEAD = { CTV: "Connected TV Specialist", LINEAR_TV: "Linear TV Specialist" };
+const PHASES = ["discover", "open", "price", "recommend", "gate", "book"];
+const PHASE_LABEL = { discover: "Discover", open: "Open", price: "Price", recommend: "Recommend", gate: "Gate", book: "Book" };
+
+function ensureChannel(ch, budget) {
+  let card = setupEls["ch_"+ch];
+  if (card) {                          // update budget once it's known (created with null)
+    if (budget != null) card.querySelector(".bud-v").textContent = money(budget);
+    return card;
+  }
+  // Remove ONLY the container's own placeholder — a descendant match (e.g. a channel
+  // card's own ".feed .empty") would wipe already-rendered cards (dropping the 1st channel).
+  const ph = document.querySelector("#channels > .empty");
+  if (ph) ph.remove();
+  const lead = LEAD[ch] || "Channel Specialist";
+  const phases = PHASES.map(p => `<span class="ph" data-ph="${p}">${PHASE_LABEL[p]}</span>`).join("");
+  card = el("div", "ch");
+  card.innerHTML = `
+    <div class="ch-hd"><span class="lvlbadge l2">L2</span><span class="nm">${esc(ch)}</span>
+      <span class="st"><span class="spinner"></span> <span class="lbl">starting…</span></span></div>
+    <div class="ch-bd">
+      <div class="kv"><span class="k">Seller</span><span class="v sel-seller">—</span></div>
+      <div class="kv"><span class="k">Budget</span><span class="v bud-v">${money(budget)}</span></div>
+      <div class="crew">
+        <div class="agent lead" data-agent="${esc(lead)}">
+          <span class="lvlbadge l2">L2</span><span class="an">${esc(lead)}</span>
+          <span class="role">directs the crew</span><span class="pulse"></span>
+        </div>
+        <div class="crew-workers">
+          <div class="agent" data-agent="Inventory Research Analyst">
+            <span class="lvlbadge l3">L3</span><span class="an">Research Analyst</span>
+            <span class="role">calls seller MCP</span><span class="pulse"></span>
+          </div>
+          <div class="agent" data-agent="Campaign Execution Specialist">
+            <span class="lvlbadge l3">L3</span><span class="an">Execution Specialist</span>
+            <span class="role">assembles the buy</span><span class="pulse"></span>
+          </div>
+        </div>
+      </div>
+      <div class="phases">${phases}</div>
+      <div class="feed"><div class="empty">waiting for the crew…</div></div>
+      <div class="rec hint" style="display:none"></div>
+      <div class="decision" style="display:none"></div>
+    </div>`;
+  $("#channels").appendChild(card);
+  setupEls["ch_"+ch] = card;
+  return card;
+}
+function chStatus(card, label, spinning=true) {
+  card.querySelector(".st .lbl").textContent = label;
+  card.querySelector(".st .spinner").style.display = spinning ? "" : "none";
+}
+// Mark a phase active and everything before it done (idempotent, never regresses).
+function setPhase(card, key) {
+  const idx = PHASES.indexOf(key);
+  if (idx < 0) return;
+  PHASES.forEach((p, i) => {
+    const node = card.querySelector(`.ph[data-ph="${p}"]`);
+    if (!node) return;
+    if (i < idx) { node.classList.add("done"); node.classList.remove("active"); }
+    else if (i === idx) { if (!node.classList.contains("done")) node.classList.add("active"); }
+  });
+}
+function phaseDone(card, key) {
+  const node = card.querySelector(`.ph[data-ph="${key}"]`);
+  if (node) { node.classList.add("done"); node.classList.remove("active"); }
+}
+// Highlight the acting crew member: exact role match, else fall back to level.
+function setActiveAgent(card, ev) {
+  const agents = card.querySelectorAll(".crew .agent");
+  agents.forEach(a => a.classList.remove("active"));
+  let match = ev.agent ? card.querySelector(`.crew .agent[data-agent="${cssEsc(ev.agent)}"]`) : null;
+  if (!match) {
+    if (ev.level === "L2") match = card.querySelector(".crew .agent.lead");
+    else if (/research/i.test(ev.agent||"")) match = card.querySelector('.crew .agent[data-agent="Inventory Research Analyst"]');
+    else if (/execution/i.test(ev.agent||"")) match = card.querySelector('.crew .agent[data-agent="Campaign Execution Specialist"]');
+  }
+  if (match) match.classList.add("active");
+}
+const cssEsc = s => String(s).replace(/"/g, '\\"');
+
+// Trace feed: each MCP call is a row (the → request); the seller's response arrives as a
+// `result` event and is attached as a ← return line under that same row.
+function addStep(card, ev) {
+  const feed = card.querySelector(".feed");
+  if (feed.querySelector(".empty")) feed.innerHTML = "";
+  if (ev.kind === "result") { addResult(card, ev); return; }
+  const isTool = ev.kind === "tool";
+  const icon = isTool ? "🔧" : "🧠";
+  const lvl = ev.level || (isTool ? "L3" : "L2");
+  const role = ev.agent ? esc(ev.agent) : (isTool ? "Research Analyst" : "Specialist");
+  // Tool steps show the raw seller-MCP tool name; finishes show the reasoning output.
+  const head = isTool
+    ? `<div class="callline"><span class="toolchip">${esc(ev.tool||"tool")}</span><span class="call">MCP call</span></div>`
+    : `<div class="callline"><b>drafting recommendation</b></div>`;
+  const s = el("div", "step",
+    `<span class="who"><span class="lvlbadge ${lvl.toLowerCase()}">${esc(lvl)}</span></span>` +
+    `<span class="ic">${icon}</span>` +
+    `<span class="tx">${head}` +
+    `<div class="rn">${role}${ev.detail?` — ${esc(ev.detail)}`:""}</div></span>`);
+  feed.appendChild(s); feed.scrollTop = feed.scrollHeight;
+  if (isTool) {
+    card._lastTool = s;                 // the row a following result line attaches to
+    addReturnLine(s, null, true);       // pending placeholder until the seller responds
+  } else {
+    card._lastTool = null;
+  }
+  if (isTool && ev.result != null) addReturnLine(s, ev.result);
+}
+
+// Attach the seller's response to the most recent pending tool row (else a standalone row).
+function addResult(card, ev) {
+  const feed = card.querySelector(".feed");
+  const target = card._lastTool;
+  const pending = target && target.querySelector(".retline.pending");
+  if (pending) {
+    addReturnLine(target, ev.detail);
+  } else {
+    const lvl = (ev.level || "L3").toLowerCase();
+    const s = el("div", "step",
+      `<span class="who"><span class="lvlbadge ${lvl}">${esc(ev.level||"L3")}</span></span>` +
+      `<span class="ic">↩︎</span><span class="tx">` +
+      `<div class="retline"><span class="arrow">←</span><span>${esc(ev.detail||"∅")}</span></div></span>`);
+    feed.appendChild(s);
+  }
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// Render (or fill) the ← return line on a tool row. `pending`=true shows a placeholder.
+function addReturnLine(stepEl, text, pending=false) {
+  const tx = stepEl.querySelector(".tx");
+  let r = stepEl.querySelector(".retline");
+  if (!r) { r = el("div", "retline"); tx.appendChild(r); }
+  if (pending) {
+    r.className = "retline pending";
+    r.innerHTML = `<span class="arrow">←</span><span>awaiting seller…</span>`;
+  } else {
+    r.className = "retline";
+    r.innerHTML = `<span class="arrow">←</span><span>${esc(text==null?"∅":text)}</span>`;
+  }
+}
+
+// ---- event router ----
+function handle(ev) {
+  switch (ev.type) {
+    case "run.started": initSetup(ev); setStage("identity","active");
+      (ev.channels||[]).forEach(c => ensureChannel(c.channel, null)); break;
+    case "identity.resolved": {
+      $("#tier").textContent = ev.tier || "public";
+      const fields = Object.keys(ev.identity||{}).filter(k=>ev.identity[k]);
+      $("#tierLine").innerHTML = `<span class="pill"><b>${esc(ev.tier)}</b></span>` +
+        (fields.length ? fields.map(k=>`<span class="pill">${esc(k)}</span>`).join("")
+                       : `<span class="hint">anonymous (public) — no identity revealed</span>`);
+      setStage("identity","done"); setStage("audience","active"); break;
+    }
+    case "audience.planned": {
+      const body = $("#audBody"); body.innerHTML = "";
+      if (!(ev.segments||[]).length) { body.innerHTML = `<span class="hint">no interests in brief</span>`; }
+      (ev.segments||[]).forEach(s => {
+        const codes = (s.codes||[]).map(c=>`<span class="pill code"><b>${esc(c.code)}</b>${c.name?` ${esc(c.name)}`:""}</span>`).join("") || `<span class="hint">no code</span>`;
+        body.appendChild(el("div", null, `<div style="margin:4px 0 2px">🎯 ${esc(s.interest)}</div>${codes}`));
+      });
+      setStage("audience","done"); setStage("budget","active"); break;
+    }
+    case "budget.allocated": {
+      const body = $("#budBody"); body.innerHTML = "";
+      (ev.allocations||[]).forEach(a => {
+        body.appendChild(el("div", null,
+          `<div class="kv" style="border:0;padding:3px 0"><span class="k">${esc(a.channel)} · ${a.budget_pct}%</span><span class="v">${money(a.budget)}</span></div>
+           <div class="bar"><i style="width:${Math.min(100,a.budget_pct)}%"></i></div>
+           ${a.rationale?`<div class="hint" style="margin:4px 0 8px">${esc(a.rationale)}</div>`:""}`));
+        ensureChannel(a.channel, a.budget);
+      });
+      setStage("budget","done"); setStage("channels","active"); break;
+    }
+    case "channel.started": { const c = ensureChannel(ev.channel, ev.budget); chStatus(c, "discovering seller…"); break; }
+    case "seller.discovered": { const c = ensureChannel(ev.channel);
+      c.querySelector(".sel-seller").textContent = ev.seller_name || ev.seller_id || "—"; chStatus(c, "sourcing inventory…"); break; }
+    case "channel.researching": { const c = ensureChannel(ev.channel);
+      chStatus(c, "crew researching…");
+      setActiveAgent(c, {agent: LEAD[ev.channel], level: "L2"}); break; }
+    case "agent.step": {
+      if (ev.channel === "PORTFOLIO") break; // portfolio rationale shows in budget panel text
+      const c = ensureChannel(ev.channel);
+      addStep(c, ev);
+      setActiveAgent(c, ev);
+      if (ev.phase) setPhase(c, ev.phase);
+      if (ev.kind === "tool") chStatus(c, `${(ev.agent||"analyst")} · ${ev.tool}`);
+      break;
+    }
+    case "channel.recommended": { const c = ensureChannel(ev.channel);
+      phaseDone(c, "price"); setPhase(c, "recommend");
+      setActiveAgent(c, {agent: LEAD[ev.channel], level: "L2"});
+      const r = c.querySelector(".rec"); r.style.display = "";
+      if (ev.product_id) {
+        chStatus(c, "pricing & gate…");
+        r.innerHTML = `Recommended <b style="color:var(--ink)">${esc(ev.product_name||ev.product_id)}</b>` +
+          (ev.final_cpm!=null?` · crew CPM ${cpm(ev.final_cpm)}`:"") +
+          ((ev.audience_codes||[]).length?` · ${ev.audience_codes.map(x=>`<span class="pill code">${esc(x)}</span>`).join("")}`:"");
+      } else { r.innerHTML = `<span class="hint">no matching product found</span>`; }
+      break;
+    }
+    case "channel.priced": { const c = ensureChannel(ev.channel);
+      phaseDone(c, "recommend"); setPhase(c, "gate");
+      const r = c.querySelector(".rec");
+      if (ev.final_cpm!=null) {
+        const cmp = ev.max_cpm!=null ? (ev.final_cpm<=ev.max_cpm?`≤ max ${cpm(ev.max_cpm)} ✓`:`> max ${cpm(ev.max_cpm)} ✗`) : "";
+        r.innerHTML += `<div style="margin-top:6px">Seller's authoritative price: <b style="color:var(--ink)">${cpm(ev.final_cpm)}</b> <span class="hint">${cmp}</span></div>`;
+      }
+      break;
+    }
+    case "channel.decision": { const c = ensureChannel(ev.channel); chStatus(c, ev.decision, false);
+      phaseDone(c, "gate");
+      if (ev.decision === "BOOKED") phaseDone(c, "book");
+      c.querySelectorAll(".crew .agent").forEach(a => a.classList.remove("active"));
+      const d = c.querySelector(".decision"); d.style.display = ""; d.className = "decision " + ev.decision;
+      const bits = [];
+      if (ev.final_cpm!=null) bits.push(`CPM ${cpm(ev.final_cpm)}`);
+      if (ev.impressions!=null) bits.push(`${Number(ev.impressions).toLocaleString()} imps`);
+      if (ev.order_id) bits.push(`order ${esc(ev.order_id)}`);
+      if (ev.deal_id) bits.push(`PG deal ${esc(ev.deal_id)}${ev.ssp?` → ${esc(ev.ssp)}`:""}`);
+      d.innerHTML = `<div class="tag">${esc(ev.decision)}</div>
+        <div class="rs">${esc(ev.reason||"")}</div>${bits.length?`<div class="rs">${bits.join(" · ")}</div>`:""}`;
+      break;
+    }
+    case "run.completed": {
+      setStage("channels","done"); setStage("done","done");
+      const s = $("#summary"); s.className = "summary show";
+      s.innerHTML = `<h2>Campaign complete</h2><div class="stats">
+        <div class="stat"><div class="n" style="color:var(--good)">${ev.booked||0}</div><div class="l">channels booked</div></div>
+        <div class="stat"><div class="n" style="color:var(--warn)">${ev.passed||0}</div><div class="l">passed</div></div>
+        <div class="stat"><div class="n">${money(ev.spend)}</div><div class="l">committed spend</div></div>
+        <div class="stat"><div class="n" style="text-transform:capitalize">${esc(ev.buyer_tier||"public")}</div><div class="l">buyer tier</div></div>
+      </div>`;
+      break;
+    }
+    case "run.error": {
+      const s = $("#summary"); s.className = "summary show err";
+      s.innerHTML = `<h2>Run failed</h2><div class="rs">${esc(ev.message||"unknown error")}</div>`;
+      break;
+    }
+  }
+}
+
+loadBriefs();
+</script>
+</body>
+</html>

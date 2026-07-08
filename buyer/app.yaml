@@ -1,0 +1,33 @@
+# Databricks App config for the buyer. The app's service principal is granted the
+# Lakebase instances and mints its own credentials at runtime (no secrets here).
+
+command: ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+env:
+  - name: AAMP_BUYER_ID
+    value: buyer-northstar
+  - name: AAMP_BUYER_INSTANCE
+    value: aamp-buyer
+  - name: AAMP_BUYER_DATABASE
+    value: ad_buyer
+  # The buyer reads a separate registry instance for seller discovery; a non-default
+  # --prefix deploy overrides both, so keep them in lockstep with AAMP_BUYER_INSTANCE.
+  - name: AAMP_REGISTRY_INSTANCE
+    value: aamp-registry
+  - name: AAMP_REGISTRY_DATABASE
+    value: agent_registry
+  # Live registry app (optional). When set, the buyer discovers sellers + verifies its
+  # own trust against the registry app instead of reading Lakebase directly (requires
+  # sellers to advertise inventory_types on their card). buyer_url auto-derives from
+  # DATABRICKS_APP_URL.
+  # - name: AAMP_REGISTRY_URL
+  #     value: "https://<aamp-registry-app url>"
+  # Reachable seller app URLs (Lakebase-fallback discovery only; keyed by capability or
+  # agent_id). Unneeded when AAMP_REGISTRY_URL is set (URLs come from the seller card):
+  # - name: AAMP_SELLER_URLS
+  #     value: "ctv=https://<aamp-seller-summit url>,linear_tv=https://<aamp-seller-beacon url>"
+  # Model Serving (defaults derive base_url from the SDK host and use sonnet):
+  # - name: AAMP_OPENAI_BASE_URL
+  #     value: "<workspace>/serving-endpoints"
+  # - name: AAMP_LLM_MODEL
+  #     value: "databricks-claude-sonnet-4-5"

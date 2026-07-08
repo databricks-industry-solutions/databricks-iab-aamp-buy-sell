@@ -1,0 +1,21 @@
+# buyer/ — agentic AAMP buyer runtime dependencies.
+#   pip install -r requirements.txt
+
+# Data layer + web surface
+fastapi>=0.115.0
+uvicorn>=0.30.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+psycopg[binary]>=3.1       # relational reads of ad_buyer.aamp / agent_registry.aamp
+databricks-sdk>=0.119.0    # mint Lakebase + Model Serving creds at runtime (Autoscaling w.postgres API)
+python-dotenv>=1.0.0
+
+# Seller MCP client (streamable-HTTP to each seller's /mcp/)
+mcp>=1.0.0
+
+# Agentic layer on Databricks Model Serving
+crewai>=1.0.0              # L1/L2/L3 agents via the OpenAI-compatible provider
+litellm>=1.0.0            # routes "openai/<endpoint>" + base_url to a Databricks serving endpoint
+
+# Tracing (optional at runtime)
+mlflow>=2.16.0            # mlflow.crewai.autolog() traces the L1/L2/L3 run

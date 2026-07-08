@@ -1,0 +1,22 @@
+# registry/ — AAMP agent registry (REST + MCP). Runtime deps (crewai-free).
+#
+# Reuses the IAB seller-agent SDK's registry models/service/clients VERBATIM, but
+# runs NO agents, so we install the SDK with `--no-deps` and pin these slim deps.
+#
+# Dev / CI install:
+#   pip install -r requirements.txt
+#   pip install --no-deps "ad_seller_system @ git+https://github.com/IABTechLab/seller-agent.git@0b463ba"
+
+# --- SDK transitive bits the registry subset needs ---
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+aiosqlite>=0.20.0          # storage/__init__ eagerly imports the (unused) sqlite backend
+
+# --- our server + data access ---
+mcp>=1.0.0                 # FastMCP (same framework the SDK's own MCP server uses)
+fastapi>=0.115.0
+uvicorn>=0.30.0
+httpx>=0.27.0              # SDK fetch_agent_card / AAMPRegistryClient
+asyncpg>=0.29.0            # the SDK PostgresBackend (LakebaseKVStore) connects via asyncpg
+databricks-sdk>=0.119.0    # mint Lakebase creds at runtime; >=0.119 for the Autoscaling w.postgres API
+python-dotenv>=1.0.0

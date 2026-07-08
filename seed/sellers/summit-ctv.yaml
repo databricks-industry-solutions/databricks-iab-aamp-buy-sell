@@ -1,0 +1,49 @@
+# Summit Streaming — a single-channel CTV seller.
+# One seller = one channel (registry capability = media_type). Audiences/inventory/
+# products/packages all belong to this seller; products never cross sellers.
+seller:
+  id: seller-summit
+  name: "Summit Streaming"
+  domain: summitstreaming.example
+  channel: CTV          # buyer-side ChannelType
+  media_type: ctv       # registry capability token + inventory_type (must match buyer media_type)
+  device_types: [3, 7]  # AdCOM: 3=Connected TV, 7=Set-Top Box
+
+# Audiences this seller manages (real IAB Audience Taxonomy 1.1 Unique IDs).
+audiences:
+  - {id: aud-sports-enthusiasts, iab: "607",  name: "Sports Enthusiasts",   size: 12500000, keywords: ["sports fans", "sports", "fans"]}            # Interest|Sports
+  - {id: aud-cord-cutters,       iab: "706",  name: "Cord Cutters 18-34",   size: 8200000,  keywords: ["cord cutters", "streamers", "television"]}  # Interest|Television
+  - {id: aud-fast-food-lovers,   iab: "1404", name: "Fast Food Lovers",     size: 11200000, keywords: ["fast food lovers", "fast food", "qsr"]}      # Purchase Intent|Food & Bev Services|Fast Food
+  - {id: aud-families-kids,      iab: "98",   name: "Families with Kids",   size: 9800000,  keywords: ["families with kids", "families", "kids"]}     # Demographic|Household|Parents with Children
+  - {id: aud-frequent-travelers, iab: "719",  name: "Frequent Travelers",   size: 7800000,  keywords: ["frequent travelers", "travelers", "travel"]} # Interest|Travel
+  - {id: aud-beach-vacationers,  iab: "724",  name: "Beach Vacationers",    size: 5400000,  keywords: ["beach vacationers", "beach", "vacation"]}     # Interest|Travel|Beach Travel
+  - {id: aud-latenight-snackers, iab: "1115", name: "Late-Night Snackers",  size: 4500000,  keywords: ["late-night snackers", "late night", "snackers"]} # Purchase Intent|CPG|Snacks
+  - {id: aud-home-garden,        iab: "457",  name: "Home & Garden Enthusiasts", size: 8600000, keywords: ["home & garden", "home improvement", "gardening"]} # Interest|Home & Garden
+  - {id: aud-style-fashion,      iab: "676",  name: "Style & Fashion Fans",  size: 7300000,  keywords: ["style", "fashion", "apparel"]}                    # Interest|Style & Fashion
+
+# Inventory (single channel = ctv). content_categories = real IAB Content Taxonomy 3.1 Unique IDs.
+inventory:
+  - {id: inv-ctv-sports, name: "CTV Sports Pre-Roll :15/:30", content: ["483", "484"], floor_cpm: 28.0, ad_formats: [video]}  # Sports / American Football
+  - {id: inv-ctv-food,   name: "CTV Food Mid-Roll :15/:30",   content: ["210", "218"], floor_cpm: 26.0, ad_formats: [video]}  # Food & Drink / Dining Out
+  - {id: inv-ctv-travel, name: "CTV Travel Pre-Roll :15/:30", content: ["653", "664"], floor_cpm: 24.0, ad_formats: [video]}  # Travel / Travel Type
+  - {id: inv-ctv-home,   name: "CTV Home & Style Mid-Roll :15/:30", content: ["274", "552"], floor_cpm: 23.0, ad_formats: [video]}  # Home & Garden / Style & Fashion
+
+# Products join this seller's inventory + audiences (never cross-seller).
+products:
+  - {id: prod-ctv-sports, name: "CTV Sports", inventory: [inv-ctv-sports], audiences: [aud-sports-enthusiasts, aud-cord-cutters], base_cpm: 40.0}
+  - {id: prod-ctv-food,   name: "CTV Food",   inventory: [inv-ctv-food],   audiences: [aud-fast-food-lovers, aud-families-kids, aud-latenight-snackers], base_cpm: 38.0}
+  - {id: prod-ctv-travel, name: "CTV Travel", inventory: [inv-ctv-travel], audiences: [aud-frequent-travelers, aud-beach-vacationers], base_cpm: 36.0}
+  - {id: prod-ctv-home,   name: "CTV Home & Style", inventory: [inv-ctv-home], audiences: [aud-home-garden, aud-style-fashion], base_cpm: 35.0}
+
+packages:
+  - {id: pkg-ctv-premium,   name: "Summit CTV Premium",   products: [prod-ctv-sports, prod-ctv-food], base_price: 40.0, featured: true}
+  - {id: pkg-ctv-lifestyle, name: "Summit CTV Lifestyle", products: [prod-ctv-travel, prod-ctv-home], base_price: 36.0}  # travel + home; food is Premium-only now
+
+# Rate card = per-tier pricing rules. base_cpm_override = absolute negotiated CPM; discount = % off card.
+rate_card:
+  - {tier: agency,     discount: 0.10}                              # agencies: 10% off card
+  - {tier: advertiser, base_cpm_override: 32.0, floor: 22.0, ceiling: 45.0}  # preferred advertiser: flat negotiated CPM
+
+registry:
+  trust_level: APPROVED   # the seller's discovery trust (buyer connects)
+  decoy: {id: seller-rival-ctv, name: "Rival Streaming", domain: rivalstreaming.example, trust_level: BLOCKED}  # discovered, then trust-rejected (no server)

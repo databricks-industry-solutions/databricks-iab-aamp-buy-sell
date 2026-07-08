@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seller_mcp"
+version = "0.1.0"
+description = "Deterministic AAMP seller MCP server (reuses the IAB seller-agent SDK)"
+requires-python = ">=3.11"
+# Runtime deps are pinned in requirements.txt (incl. the SDK installed --no-deps).
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["seller_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: hits live Lakebase (needs Databricks creds); deselect with -m 'not integration'",
+]

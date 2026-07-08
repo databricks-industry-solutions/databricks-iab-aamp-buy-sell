@@ -1,0 +1,19 @@
+# Reference/local app config for ONE seller. The DAB deploys one app PER seller;
+# `make deploy` renders build/seller-<slug>/app.yaml per seller (overriding AAMP_SELLER
+# + the target instance). The app's service principal is granted the Lakebase instance
+# via the DAB (apps.*.resources -> database); it mints its own credential at runtime.
+
+command: ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+env:
+  - name: AAMP_SELLER
+    value: summit                 # summit (CTV) | beacon (Linear)
+  - name: AAMP_SELLER_INSTANCE
+    value: aamp-seller
+  - name: AAMP_SELLER_DATABASE
+    value: ad_seller
+  # Channel advertised on the agent card (A2A inventory_types, lowercase). Buyers match
+  # a campaign's channel to this. Defaults per slug if unset (summit=ctv, beacon=linear_tv).
+  - name: AAMP_INVENTORY_TYPES
+    value: ctv
+  # AAMP_DATABRICKS_PROFILE is unset in-app: the SDK uses the app's SP credentials.

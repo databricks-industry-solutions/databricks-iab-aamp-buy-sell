@@ -1,0 +1,59 @@
+# Buyer side — one hero buyer whose registry trust you flip to demo tiering.
+# Trust is global-per-buyer in the registry: flipping it (UNKNOWN→APPROVED→PREFERRED,
+# i.e. public→agency→advertiser) changes pricing at BOTH sellers at once. Public view
+# = connect WITHOUT an api_key. Each seller still applies its OWN rate card at that tier.
+buyers:
+  - id: buyer-northstar
+    name: "Northstar"
+    seat_id: seat-northstar
+    agency_id: agcy-northstar
+    advertiser_id: adv-northstar
+    holding_company: hc-omnimedia
+    trust: APPROVED        # seeded state → agency tier. Flip to PREFERRED (advertiser) / UNKNOWN (public) live.
+
+# Briefs carry a CTV + Linear channel allocation (budget_pct sums to 100). Each channel
+# fans out to the seller that offers it (CTV→Summit, LINEAR_TV→Beacon). interests are free
+# text the planner resolves to IAB codes the sellers' packages declare.
+#
+# max_cpm = the SDK buy-or-pass ceiling (deal_preferences.max_cpm; ≈ a brief's "Target CPM").
+# It's set to 38 ON PURPOSE so Summit's premium CTV product (prod-ctv-sports, card $40) is
+# ABOVE the ceiling at PUBLIC tier → the buyer PASSES on it. Flip the buyer's trust up to
+# agency (10% off → $36) or advertiser (override $32) and it falls under $38 → BOOKS. So the
+# registry-trust tier directly drives buy-or-pass on the premium CTV deal. NO impressions
+# field — impressions are derived at quote time (budget ÷ CPM); reach is the objective.
+#
+# execution = the fulfilment RAIL (deal_preferences.execution; net-new — the SDK has no
+# direct-vs-SSP chooser, see accelerator DECISIONS OD3/OD4). Each demo brief is single-rail
+# so the contrast is clean:
+#   direct       → RAIL 1: OpenDirect IO. The seller guarantees impressions on its own
+#                  inventory; create_order → create_line → submit_creative; ad server serves.
+#   programmatic → RAIL 2: PG Deal ID → SSP. create_deal → distribute_deal_via_ssp; the
+#                  buyer's DSP activates the Deal ID (dedupes reach + caps frequency across
+#                  publishers — the natural home for a cross-publisher reach goal).
+# Orthogonal to deal_type (PG/PD/PA = the commercial term on the quote).
+briefs:
+  - id: brief-q3-brandperf
+    name: "Q3 Brand Launch — Guaranteed CTV & Linear (Direct IO)"
+    buyer: buyer-northstar
+    total_budget: 200000
+    objectives: [reach, awareness]
+    flight: ["2026-07-01", "2026-09-30"]
+    max_cpm: 38                                    # public CTV card $40 > 38 → passes until tier upgraded
+    execution: direct                              # RAIL 1 — OpenDirect IO (guaranteed premium brand buy)
+    interests: ["sports fans", "auto intenders"]   # → 607 (Summit/CTV) + 244 (Beacon/Linear)
+    channels:
+      - {channel: CTV,       budget_pct: 60, format_prefs: [video_30s, video_15s]}
+      - {channel: LINEAR_TV, budget_pct: 40, format_prefs: [video_30s]}
+  - id: brief-alwayson
+    name: "H2 Always-On Reach — Programmatic Guaranteed (PG/SSP)"
+    buyer: buyer-northstar
+    total_budget: 120000
+    objectives: [reach]
+    flight: ["2026-07-01", "2026-12-31"]
+    max_cpm: 38                                    # CTV card here is $38 (prod-ctv-food) → books at all tiers
+    execution: programmatic                        # RAIL 2 — PG Deal ID → SSP (DSP dedupes reach across publishers)
+    preferred_deal_types: [programmaticguaranteed] # PG only
+    interests: ["fast food", "investors"]          # → 1404 (Summit/CTV) + 538 (Beacon/Linear)
+    channels:
+      - {channel: CTV,       budget_pct: 50, format_prefs: [video_15s]}
+      - {channel: LINEAR_TV, budget_pct: 50, format_prefs: [video_30s]}

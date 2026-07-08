@@ -1,0 +1,42 @@
+/* Registry console additions on top of the shared brick design system (index.css). */
+
+/* trust-status badges */
+.badge.unknown { color: var(--muted); background: #eef1f4; }
+.badge.registered { color: #2257b6; background: #e7f0fb; }
+.badge.approved { color: var(--pass); background: var(--pass-bg); }
+.badge.preferred { color: var(--brick-dim); background: var(--fail-bg); }
+.badge.blocked { color: #fff; background: var(--fail); }
+
+/* agent-type chips */
+.chip.seller { background: #f0eef7; color: #5a4a8a; }
+.chip.buyer { background: #e7f0fb; color: #2257b6; }
+.chip.tool_provider, .chip.data_provider, .chip.other { background: #eef2f7; color: #3a4047; }
+
+/* inline trust editor in the directory table */
+.trust-select { border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 12.5px; font-family: inherit; background: #fff; }
+.row-actions { display: flex; gap: 8px; align-items: center; }
+.link-btn { border: none; background: transparent; color: var(--brick-dim); font-weight: 600; font-size: 12.5px; cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }
+.mono { font-family: var(--mono); font-size: 12px; }
+
+/* verify console — quick-pick chips + URL input */
+.verify-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.verify-bar .field { flex: 1; min-width: 320px; }
+.verify-bar input { width: 100%; }
+.quickpicks { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.quickpicks button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.quickpicks button:hover { border-color: var(--brick); color: var(--brick); }
+
+/* TRUST_TO_TIER_MAP ladder */
+.ladder { display: flex; flex-direction: column; gap: 8px; }
+.ladder-row { display: grid; grid-template-columns: 150px 24px 1fr; gap: 12px; align-items: center; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; opacity: 0.55; transition: opacity 0.2s, border-color 0.2s, box-shadow 0.2s; }
+.ladder-row.hit { opacity: 1; border-color: var(--brick); box-shadow: 0 0 0 3px rgba(255,54,33,0.10); }
+.ladder-row .arrow { color: var(--muted); text-align: center; }
+.ladder-row .tier { font-weight: 700; }
+
+/* verdict hero for the verify result */
+.verdict-hero { text-align: center; padding: 10px 0 22px; }
+.verdict-badge { display: inline-flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 750; letter-spacing: -0.02em; padding: 12px 24px; border-radius: 14px; }
+.verdict-badge.ok { background: var(--pass-bg); color: var(--pass); }
+.verdict-badge.blocked { background: var(--fail-bg); color: var(--fail); }
+.verdict-sub { margin-top: 10px; color: var(--muted); font-size: 14px; }
