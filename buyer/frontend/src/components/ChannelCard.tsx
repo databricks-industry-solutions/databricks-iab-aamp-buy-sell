@@ -82,6 +82,8 @@ export default function ChannelCard({ c }: { c: ChannelState }) {
         ))}
       </div>
 
+      {c.capMessage && <div className="cap-warning">⚠ {c.capMessage}</div>}
+
       <div className="feed" ref={feedRef}>
         {c.steps.length === 0 && <div className="empty-note small">waiting for the crew…</div>}
         {c.steps.map((s) => {

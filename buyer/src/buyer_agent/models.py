@@ -63,7 +63,7 @@ class ChannelOutcome(BaseModel):
 
     channel: str
     capability: str
-    decision: str                # BOOKED | PASSED | NO_SELLER | NO_PRODUCT
+    decision: str                # BOOKED | PASSED | NO_SELLER | NO_PRODUCT | NO_ACCESS
     reason: str = ""
     seller_id: Optional[str] = None
     seller_name: Optional[str] = None

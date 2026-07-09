@@ -97,6 +97,7 @@ export interface ChannelState {
   rec?: Rec | null; // null = crew found no matching product
   priced?: Priced;
   decision?: Decision;
+  capMessage?: string; // research agent hit its iteration cap (forced early answer)
 }
 
 export interface Segment {
@@ -332,6 +333,11 @@ function handleEvent(view: RunView, ev: Record<string, any>): RunView {
         return next;
       });
     }
+    case "agent.cap":
+      return withChannel(view, ev.channel, (c) => ({
+        ...c,
+        capMessage: ev.message || `research agent hit its ${ev.cap}-step cap`,
+      }));
     case "channel.recommended":
       return withChannel(view, ev.channel, (c) => ({
         ...c,

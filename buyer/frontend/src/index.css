@@ -503,15 +503,23 @@ a { color: inherit; text-decoration: none; }
 .rec-price { margin-top: 4px; }
 .rec-price b { font-size: 14px; }
 
+/* iteration-cap breach ribbon — the research agent was forced to answer early */
+.cap-warning {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: 11.5px; color: var(--warn);
+  background: var(--warn-bg); border: 1px solid #ecd9ae; border-radius: 7px;
+  padding: 6px 10px;
+}
+
 /* decision tile — big type */
 .decision { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: auto; }
 .decision.BOOKED { background: var(--pass-bg); border-color: #bfdfcd; }
 .decision.PASSED { background: var(--warn-bg); border-color: #ecd9ae; }
-.decision.NO_SELLER, .decision.NO_PRODUCT { background: var(--fail-bg); border-color: #f2c4bc; }
+.decision.NO_SELLER, .decision.NO_PRODUCT, .decision.NO_ACCESS { background: var(--fail-bg); border-color: #f2c4bc; }
 .d-tag { font-weight: 800; letter-spacing: 0.06em; font-size: 15px; }
 .decision.BOOKED .d-tag { color: var(--pass); }
 .decision.PASSED .d-tag { color: var(--warn); }
-.decision.NO_SELLER .d-tag, .decision.NO_PRODUCT .d-tag { color: var(--fail); }
+.decision.NO_SELLER .d-tag, .decision.NO_PRODUCT .d-tag, .decision.NO_ACCESS .d-tag { color: var(--fail); }
 .d-nums { display: flex; gap: 34px; margin-top: 8px; }
 .d-num .n { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; display: block; }
 .d-num .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }

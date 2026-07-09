@@ -54,6 +54,23 @@ def test_no_ceiling_books():
     assert decision == "BOOK"
 
 
+# ----- access_gate: the public-tier visibility gate ---------------------------
+
+def test_anonymous_buyer_is_gated():
+    # public tier presents nothing → PublicPackageView hides product_ids → the
+    # crew's task is unsatisfiable; the gate must short-circuit deterministically.
+    gated = flow.access_gate({})
+    assert gated is not None
+    decision, reason = gated
+    assert decision == "NO_ACCESS"
+    assert "public" in reason.lower()
+
+
+def test_identified_buyer_passes_gate():
+    assert flow.access_gate({"seat_id": "seat-1"}) is None
+    assert flow.access_gate({"seat_id": "s", "agency_id": "a", "advertiser_id": "ad"}) is None
+
+
 # ----- impressions math -----------------------------------------------------
 
 def test_impressions_cpm_formula():

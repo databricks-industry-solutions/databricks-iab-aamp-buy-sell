@@ -12,6 +12,12 @@ from typing import Any
 
 from crewai import Agent
 
+# Hard iteration cap for the research agent. A normal run is ~6-10 tool calls
+# (discover, a few opens, a few prices); the cap only bites when the shortlist is
+# unreachable. flow.py counts tool steps against this same number and emits an
+# `agent.cap` event so the UI can flag a breached cap.
+MAX_RESEARCH_ITER = 20
+
 
 def build_research_agent(llm: Any, tools: list[Any]) -> Agent:
     return Agent(
@@ -34,4 +40,5 @@ def build_research_agent(llm: Any, tools: list[Any]) -> Agent:
         tools=tools,
         allow_delegation=False,
         verbose=False,
+        max_iter=MAX_RESEARCH_ITER,
     )
