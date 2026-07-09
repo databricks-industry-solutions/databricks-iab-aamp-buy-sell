@@ -109,6 +109,10 @@ def _make_step_callback(
     a finish is the crew lead (`lead_role`) synthesizing its recommendation. The UI shows the
     raw seller-MCP tool name. Everything is best-effort and never raises into the crew."""
 
+    from .agents.level3.research_agent import MAX_RESEARCH_ITER
+
+    tool_calls = {"n": 0}  # per-channel tool-step counter for the cap-breach signal
+
     def _cb(step: Any) -> None:
         try:
             role = _step_agent(step)
@@ -121,6 +125,13 @@ def _make_step_callback(
                 emit("agent.step", channel=channel, kind="tool", tool=mcp_tool,
                      agent=role or owner, level=level, phase=phase,
                      detail=_trim(tool_input, 140), data=_json_safe(tool_input))
+                tool_calls["n"] += 1
+                if tool_calls["n"] == MAX_RESEARCH_ITER:
+                    # The agent is at its iteration ceiling — it will be forced to
+                    # answer with whatever it has. Surface that to the UI.
+                    emit("agent.cap", channel=channel, cap=MAX_RESEARCH_ITER,
+                         message=(f"research agent hit its {MAX_RESEARCH_ITER}-step cap — "
+                                  "forcing a final answer with what it has"))
                 # The seller's response — the `←` return side of the trace (best-effort;
                 # CrewAI attaches the tool observation to the step after it runs).
                 result = getattr(step, "result", None)
@@ -193,6 +204,31 @@ def book_or_pass(
         return ("PASS", imps, f"impressions {imps} < product minimum {int(min_impressions)}")
     ceiling = "no ceiling" if max_cpm is None else f"max_cpm {max_cpm:.2f}"
     return ("BOOK", imps, f"final_cpm {final_cpm:.2f} ≤ {ceiling}")
+
+
+def access_gate(identity: dict) -> Optional[tuple[str, str]]:
+    """The public-tier visibility gate, run BEFORE any channel crew is built.
+
+    The seller's PUBLIC tier returns package views with a price RANGE and no
+    placements — there is no product_id anywhere in what an anonymous buyer can
+    see, so the research crew's task (shortlist product_ids with real prices) is
+    unsatisfiable and the crew would spin. This gate short-circuits that case
+    deterministically, the same way book_or_pass owns the money decision.
+
+    Returns (decision, reason) to skip the crew — e.g. ("NO_ACCESS", "...") —
+    or None to proceed. `identity` is the tier-gated dict from resolve_identity:
+    empty means the buyer presents nothing (public/anonymous). Gating on the
+    PRESENTED identity (not the tier label) also catches a missing identity row —
+    the seller would treat that buyer as public anyway.
+    """
+    if not identity:
+        return (
+            "NO_ACCESS",
+            "public tier: the seller shows packages with CPM ranges only — no products "
+            "or exact prices. Present an identity (seat/agency/advertiser) to unlock "
+            "product-level pricing and booking.",
+        )
+    return None
 
 
 _DEFAULT_CAPABILITY = {"CTV": "ctv", "LINEAR_TV": "linear_tv"}
@@ -286,6 +322,42 @@ def execute_channel(
 
     if not seller.base_url:
         return base.model_copy(update={"decision": "NO_SELLER", "reason": "no reachable seller URL"})
+
+    # Public-tier short-circuit: an anonymous buyer can't see product_ids at all
+    # (PublicPackageView has no placements), so don't send the crew on an
+    # unsatisfiable errand — resolve the channel deterministically. But first show
+    # what the anonymous buyer CAN see: one deterministic list_packages call — the
+    # public storefront (package names + CPM ranges, no products, no exact prices).
+    gated = access_gate(identity)
+    if gated is not None:
+        decision, reason = gated
+        emit("agent.step", channel=spec.channel, kind="tool", tool="list_packages",
+             agent="Inventory Research Analyst", level="L3", phase="discover",
+             detail="anonymous discovery — the seller's public storefront view")
+        try:
+            async def _peek() -> Any:
+                async with SellerMCPClient(
+                    seller.base_url, mcp_path=settings.seller_mcp_path,
+                    headers=settings.seller_mcp_headers() or None,
+                ) as c:
+                    return await c.list_packages()  # no identity → PUBLIC views
+
+            packages = run_sync(_peek())
+            ranges = "; ".join(
+                f"{p.get('name', '?')} {p.get('price_range', '')}".strip()
+                for p in packages[:4] if isinstance(p, dict)
+            )
+            emit("agent.step", channel=spec.channel, kind="result", tool="list_packages",
+                 agent="Inventory Research Analyst", level="L3", phase="discover",
+                 detail=_trim(f"{len(packages)} package(s) — ranges only, no products: {ranges}"),
+                 data=_json_safe(packages))
+        except Exception as e:  # the peek is illustrative; the gate decision stands
+            emit("agent.step", channel=spec.channel, kind="result", tool="list_packages",
+                 agent="Inventory Research Analyst", level="L3", phase="discover",
+                 detail=_trim(f"public discovery failed: {e}"))
+        emit("channel.decision", channel=spec.channel, decision=decision, reason=reason,
+             seller_name=seller.name, channel_budget=channel_budget)
+        return base.model_copy(update={"decision": decision, "reason": reason})
 
     manager_llm = manager_llm or build_llm(settings, model=settings.manager_llm_model, temperature=0.3)
     worker_llm = worker_llm or build_llm(settings, model=settings.llm_model, temperature=0.2)

@@ -132,11 +132,17 @@ def build_channel_crew(
             "3. Prefer products whose declared audience codes intersect the target codes.\n"
             "4. Call get_product_pricing on your top candidates to read the seller's real final price.\n"
             "Return a short ranked shortlist: product_id, name, final price (from the tool), and which "
-            "target codes it matches. NEVER estimate a price — only report prices the tool returned."
+            "target codes it matches. NEVER estimate a price — only report prices the tool returned.\n\n"
+            "PUBLIC-TIER DEAD END: if the packages you open show only a price_range and NO "
+            "products/placements (no product_id anywhere), you are browsing anonymously — the seller "
+            "hides product-level access from unidentified buyers. STOP immediately and return an "
+            "empty shortlist stating that the seller requires an identified buyer. Do NOT retry "
+            "discovery, do NOT guess product ids."
         ),
         expected_output=(
             "A ranked shortlist of 1-3 products with: product_id, product name, final CPM (from "
-            "get_product_pricing), and the matched audience codes."
+            "get_product_pricing), and the matched audience codes — or an explicitly empty shortlist "
+            "when the seller's public tier hides the products."
         ),
         agent=research,
     )

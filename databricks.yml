@@ -38,6 +38,13 @@ targets:
     mode: development
     default: true
     # workspace.host comes from your `databricks auth` profile.
+  # A second, independent stack (own terraform state — root_path includes the target
+  # name), so it coexists with the dev target's deployment instead of replacing it.
+  # Deploy with: make all PREFIX=aamp9 TARGET=aamp9 [PROFILE=name]
+  aamp9:
+    mode: development
+    variables:
+      instance_prefix: aamp9
 
 resources:
   # --- Lakebase Autoscaling (Postgres) projects: buyer / seller / registry ---

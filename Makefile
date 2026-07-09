@@ -50,7 +50,9 @@ down: $(PY)             ## DELETE the 3 Lakebase instances (stops billing)
 
 PREFIX ?= aamp
 PROFILE ?=                                       ## Databricks CLI profile (blank = DEFAULT/env)
+TARGET ?=                                        ## bundle target (blank = default `dev`; e.g. TARGET=aamp9 for a coexisting stack)
 DBX_PROFILE := $(if $(PROFILE),-p $(PROFILE),)
+DBX_TARGET := $(if $(TARGET),-t $(TARGET),)
 frontend:               ## build the seller cockpit + registry console + buyer console (vite) → */frontend/dist (Apps only pip-install)
 	@cd seller/frontend && [ -d node_modules ] || NODE_OPTIONS= npm install --no-audit --no-fund
 	cd seller/frontend && NODE_OPTIONS= npm run build
@@ -65,7 +67,7 @@ render: $(PY) frontend $(TAXO_DIR)/.vendored ## build UI + vendor taxonomies, th
 	$(PY) buyer/render_apps.py $(PREFIX) $(PROFILE)
 
 deploy: render          ## render per-seller app dirs, DAB deploy, then tune endpoints (PREFIX=aamp [PROFILE=name])
-	databricks bundle deploy $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
+	databricks bundle deploy $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
 	$(MAKE) endpoints PREFIX=$(PREFIX) PROFILE=$(PROFILE)
 
 endpoints:              ## tune each project's auto-created primary endpoint to 0.5-1 CU (waits until ready; scale-to-zero already on)
@@ -94,21 +96,21 @@ grant-app-access: $(PY) ## grant the buyer app's SP CAN_USE on the registry + se
 	$(PY) grant_app_access.py $(PREFIX) $(PROFILE)
 
 run-apps:               ## deploy app code + start each app (like `bundle run` for a job)
-	databricks bundle run seller_summit_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
-	databricks bundle run seller_beacon_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
-	databricks bundle run registry_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
-	databricks bundle run buyer_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
+	databricks bundle run seller_summit_app $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
+	databricks bundle run seller_beacon_app $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
+	databricks bundle run registry_app $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
+	databricks bundle run buyer_app $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
 
 register-sellers: $(PY) ## register the live seller apps into the registry (dynamic; needs apps running + seeded)
 	$(PY) registry/register_sellers.py $(PREFIX) $(PROFILE)
 
 wire-buyer: $(PY)       ## bake the deployed registry URL into the buyer + redeploy it (registry must already exist)
 	$(PY) buyer/render_apps.py $(PREFIX) $(PROFILE)
-	databricks bundle deploy $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
-	databricks bundle run buyer_app $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
+	databricks bundle deploy $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
+	databricks bundle run buyer_app $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
 
 seed-job:               ## run the deployed seed_job (relational + kv_store + registry kv) on the deployed instances
-	databricks bundle run seed_job $(DBX_PROFILE) --var="instance_prefix=$(PREFIX)"
+	databricks bundle run seed_job $(DBX_PROFILE) $(DBX_TARGET) --var="instance_prefix=$(PREFIX)"
 
 all: deploy grant-apps grant-app-access seed-job run-apps register-sellers wire-buyer   ## full install: infra → grants (db + serving + app-to-app) → seed → start apps → register sellers → wire buyer to live registry
 	@echo "✓ AAMP stack up (2 sellers + registry + buyer). Apps:"
